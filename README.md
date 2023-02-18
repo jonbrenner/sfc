@@ -27,7 +27,7 @@ A command-separated list of indexes corresponding to the shell history is sent t
 
 EXAMPLES
 
-Prompt the user for a comment and add the comment and last command in history to the file in SPC_FILE environment variable.
+Prompt the user for a comment and add the comment and last command in history to the file in SFC_FILE environment variable.
 SFC_FILE="${HOME}/cheat.md" sfc
 
 Print the comment, command at 101, and each command from 90-95 to STDOUT. Commands are outputed in the order specified.
