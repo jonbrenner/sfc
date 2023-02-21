@@ -1,4 +1,5 @@
-# Annotate and write commands from history in markdown code blocks
+# sfc - Annotate and write commands from history in markdown code blocks
+
 function _sfc_out {
     local comment="$1"
     local snippet="$2"
@@ -14,6 +15,27 @@ function _sfc_out {
     output+='```\n'
     output+="*${date} - ${hostname}*\n\n"
     echo "$output"
+}
+
+function _sfc_get_history {
+    # for each item in the array, check if valid, and add each element to the list of commands to fetch
+    # a value is valid if:
+    # * it is all digits, optionally preceded by a hyphen
+    # * it is a series of digits separated by a single hyphen
+    local arr="$1"
+    local fc_out=()
+    for e in "${arr[@]}"; do
+        if [[ $e =~ ^-?[0-9]+$ ]]; then
+            fc_out+="$(fc -ln "$e" "$e")"
+        elif [[ $e =~ ^[0-9]+-[0-9]+$ ]]; then
+            fc_out+="$(fc -ln "${e%*-}" "${e#*-}")"
+        else
+            echo "Error - Invalid index: $e" >&2
+            echo "Valid syntax: i,-i,i-j,j-i" >&2
+            return 2
+        fi
+    done
+    echo "$fc_out"
 }
 
 function sfc {
@@ -70,25 +92,9 @@ function sfc {
         set -- "-1"
     fi
 
-    # Split the comma-separated string into an array
+    # Split the comma-separated string into an array and fetch the commands from history
     local arr=(${(s:,:)1})
-
-    # for each item in the array, check if valid, and add each element to the list of commands to fetch
-    # a value is valid if:
-    # * it is all digits, optionally preceded by a hyphen
-    # * it is a series of digits separated by a single hyphen
-    local fc_out=()
-    for e in "${arr[@]}"; do
-        if [[ $e =~ ^-?[0-9]+$ ]]; then
-            fc_out+="$(fc -ln "$e" "$e")"
-        elif [[ $e =~ ^[0-9]+-[0-9]+$ ]]; then
-            fc_out+="$(fc -ln "${e%*-}" "${e#*-}")"
-        else
-            echo "Error - Invalid index: $e" >&2
-            echo "Valid syntax: i,-i,i-j,j-i" >&2
-            return 2
-        fi
-    done
+    local fc_out="$(_sfc_get_history "$arr")"
 
     local comment=""
     if [[ "$cflag" ]]; then
@@ -101,7 +107,7 @@ function sfc {
         done
     fi
 
-    local output="$(_sfc_out "$comment" "$fc_out")"
+    local output="$(_sfc_out "$comment" "$fc_out")"$'\n\n'
     if [[ "$outfile" ]]; then
         touch "$outfile"
         echo -n "$output" >>"$outfile"
