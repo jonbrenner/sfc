@@ -1,4 +1,20 @@
 # Annotate and write commands from history in markdown code blocks
+function _sfc_out {
+    local comment="$1"
+    local snippet="$2"
+    local date=$(date +"%Y-%m-%d %H:%M:%S")
+    local hostname=$(hostname)
+    local output=""
+    local comment_first_line="$(echo "$comment" | head -n 1)"
+    local comment_rest="$(echo "$comment" | tail -n +2)"
+    output+="**${comment_first_line}**\n"
+    [[ -n "$comment_rest" ]] && output+="${comment_rest}\n"
+    output+='```\n'
+    output+="$snippet"$'\n'
+    output+='```\n'
+    output+="*${date} - ${hostname}*\n\n"
+    echo "$output"
+}
 
 function sfc {
 
@@ -85,18 +101,7 @@ function sfc {
         done
     fi
 
-    local date=$(date +"%Y-%m-%d %H:%M:%S")
-    local hostname=$(hostname)
-    local output=""
-    local comment_first_line="$(echo "$comment" | head -n 1)"
-    local comment_rest="$(echo "$comment" | tail -n +2)"
-    output+="**${comment_first_line}**\n"
-    [[ -n "$comment_rest" ]] && output+="${comment_rest}\n"
-    output+='```\n'
-    output+="$fc_out"$'\n'
-    output+='```\n'
-    output+="*${date} - ${hostname}*\n\n"
-
+    local output="$(_sfc_out "$comment" "$fc_out")"
     if [[ "$outfile" ]]; then
         touch "$outfile"
         echo -n "$output" >>"$outfile"
